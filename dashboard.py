@@ -386,3 +386,63 @@ with tab9:
                 with cB:
                     st.error("⚕️ **Biyolojik Sonuç (Mutasyon/Hastalık Etkisi):**")
                     st.write(result.biological_outcome)
+
+# --- MODÜL 6: 3D MOLEKÜLER KENETLENME VE YAPI GÖRÜNTÜLEYİCİ ---
+# (Bu kodu mevcut sekmelerinin veya tab yapıların sonuna güvenle ekleyebilirsin)
+
+st.markdown("---")
+st.subheader("🔬 3D Moleküler Kenetlenme ve Yapı Görüntüleyici (PDB Viewer)")
+st.caption("Bilinen biyolojik yapıların ve reseptör-ligand kilitlenmelerinin (örneğin Spike proteini ve ACE2) üç boyutlu atomik analizi.")
+
+# Örnek ve çarpıcı PDB (Protein Data Bank) kodları
+pdb_options = {
+    "SARS-CoV-2 Spike / ACE2 Reseptör Kilitlenmesi (6M0J)": "6M0J",
+    "İnsülin ve Reseptör Kompleksi (3W7Y)": "3W7Y",
+    "Hemoglobin Oksijen Bağlanma Yapısı (2HHB)": "2HHB",
+    "DNA Çift Sarmal Yapısı (1BNA)": "1BNA"
+}
+
+selected_complex = st.selectbox("İncelenecek Moleküler Kompleks / Virüs Eşleşmesi", list(pdb_options.keys()))
+pdb_id = pdb_options[selected_complex]
+
+# 3Dmol.js HTML / JavaScript Entegrasyonu (Sıfır ek paket gerektirir, tarayıcıda doğrudan çalışır)
+viewer_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.3/3Dmol-min.js"></script>
+    <style>
+        body {{ margin: 0; background-color: #0E1117; color: white; }}
+        #container {{ width: 100%; height: 500px; position: relative; }}
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <script>
+        let element = document.getElementById("container");
+        let config = {{ backgroundColor: "#0E1117" }};
+        let viewer = $3Dmol.createViewer(element, config);
+        
+        // Protein Data Bank'ten (PDB) gerçek atomik koordinatları çekiyoruz
+        jQuery.ajax({{
+            url: "https://files.rcsb.org/download/{pdb_id}.pdb",
+            success: function(data) {{
+                viewer.addModel(data, "pdb");
+                viewer.setStyle({{}}, {{cartoon: {{color: 'spectrum'}} }});  // Renkli spektral sarmal gösterimi
+                viewer.zoomTo();
+                viewer.render();
+            }},
+            error: function(xhr, textStatus, error) {{
+                element.innerHTML = "<p style='color:red; text-align:center; padding-top:200px;'>3D Veri yüklenirken bir hata oluştu.</p>";
+            }}
+        }});
+    </script>
+</body>
+</html>
+"""
+
+# Streamlit bileşeni olarak ekrana basıyoruz
+import streamlit.components.v1 as components
+components.html(viewer_html, height=520)
+
+st.info("💡 **İpucu:** Farenizin sol tuşuyla molekülü dilediğiniz açıda döndürebilir, tekerleğiyle yakınlaşıp uzaklaşarak atomik bağları ve hidrojen köprülerini inceleyebilirsiniz.")
