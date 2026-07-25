@@ -390,20 +390,51 @@ with tab9:
 # --- MODÜL 6: 3D MOLEKÜLER KENETLENME VE YAPI GÖRÜNTÜLEYİCİ ---
 st.markdown("---")
 st.subheader("🔬 3D Moleküler Kenetlenme ve Yapı Görüntüleyici (PDB Viewer)")
-st.caption("Bilinen biyolojik yapıların ve reseptör-ligand kilitlenmelerinin (örneğin Spike proteini ve ACE2) üç boyutlu atomik analizi.")
+st.caption("Biyolojik ve farmakolojik açıdan kritik yapıların, virüs-reseptör kilitlenmelerinin ve hücresel makinelerin üç boyutlu atomik analizi.")
 
-# Örnek ve çarpıcı PDB (Protein Data Bank) kodları
+# Kapsamlı ve Kategorize Edilmiş PDB Arşivi
 pdb_options = {
-    "SARS-CoV-2 Spike / ACE2 Reseptör Kilitlenmesi (6M0J)": "6M0J",
-    "İnsülin ve Reseptör Kompleksi (3W7Y)": "3W7Y",
-    "Hemoglobin Oksijen Bağlanma Yapısı (2HHB)": "2HHB",
-    "DNA Çift Sarmal Yapısı (1BNA)": "1BNA"
+    # Virüsler & Patojenler
+    "SARS-CoV-2 Spike / ACE2 Reseptör Kilitlenmesi": "6M0J",
+    "HIV-1 Protease (İlaç Hedefi)": "1HHP",
+    "İnfluenza (Grip) Hemagglutinin": "1RD8",
+    "Ebola Virüsü Glikoproteini": "5JQ3",
+    
+    # Hormonlar, Reseptörler & Sinyalleşme
+    "İnsülin ve Reseptör Kompleksi": "3W7Y",
+    "İnsan Büyüme Hormonu ve Reseptörü": "3HHR",
+    "Östrojen Reseptörü (Hormon Bağlanması)": "1ERE",
+    "Adrenalin Reseptörü (Beta-2 G-Protein)": "2RH1",
+    
+    # Hücresel Makineler & Genetik
+    "DNA Çift Sarmal Yapısı (Klasik)": "1BNA",
+    "CRISPR-Cas9 Gen Düzenleme Makinesi": "4UN3",
+    "Nükleozom Çekirdek Parçacığı (DNA Paketleme)": "1KX5",
+    "Bakterial Ribozom (Protein Fabrikası)": "4V6X",
+    
+    # Enzimler, Metabolizma & Taşıyıcılar
+    "Hemoglobin (Oksijen Taşıyıcı Protein)": "2HHB",
+    "Yeşil Floresan Protein (GFP - Işıyan Protein)": "1EMA",
+    "Tükürük Lizozim Enzimi (Bakteri Parçalayıcı)": "1LYZ",
+    "ATP Sentaz (Hücresel Enerji Üreteci)": "1C17"
 }
 
-selected_complex = st.selectbox("İncelenecek Moleküler Kompleks / Virüs Eşleşmesi", list(pdb_options.keys()))
-pdb_id = pdb_options[selected_complex]
+# Kullanıcıya hem hazır zengin liste hem de özel kod girebilme esnekliği sunuyoruz
+col_sel, col_custom = st.columns([2, 1])
 
-# Saf JavaScript (Fetch API) kullanan kusursuz 3Dmol.js Entegrasyonu
+with col_sel:
+    selected_complex = st.selectbox("Arşivden Seçim Yapın", list(pdb_options.keys()))
+    default_pdb = pdb_options[selected_complex]
+
+with col_custom:
+    custom_code = st.text_input("Veya Özel PDB Kodu Girin", placeholder="Örn: 4HHB", help="RCSB PDB sitesinden bulduğunuz 4 haneli kodu buraya yazabilirsiniz.")
+
+# Eğer özel kod girildiyse onu kullan, girilmediyse listedekini al
+pdb_id = custom_code.strip().upper() if custom_code.strip() else default_pdb
+
+st.write(f"🔍 **Aktif Görüntülenen PDB ID:** `{pdb_id}`")
+
+# 3D Görüntüleyici HTML/JS Entegrasyonu
 viewer_html = f"""
 <!DOCTYPE html>
 <html>
@@ -411,7 +442,7 @@ viewer_html = f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.3/3Dmol-min.js"></script>
     <style>
         body {{ margin: 0; background-color: #0E1117; color: white; font-family: sans-serif; }}
-        #container {{ width: 100%; height: 500px; position: relative; }}
+        #container {{ width: 100%; height: 550px; position: relative; }}
     </style>
 </head>
 <body>
@@ -421,10 +452,9 @@ viewer_html = f"""
         let config = {{ backgroundColor: "#0E1117" }};
         let viewer = $3Dmol.createViewer(element, config);
         
-        // Yerleşik Fetch API ile RCSB PDB veritabanından modeli çekiyoruz
         fetch("https://files.rcsb.org/download/{pdb_id}.pdb")
             .then(response => {{
-                if (!response.ok) throw new Error("Ağ hatası");
+                if (!response.ok) throw new Error("PDB verisi bulunamadı");
                 return response.text();
             }})
             .then(data => {{
@@ -434,7 +464,7 @@ viewer_html = f"""
                 viewer.render();
             }})
             .catch(error => {{
-                element.innerHTML = "<p style='color:red; text-align:center; padding-top:200px;'>3D PDB Verisi yüklenirken bir sorun oluştu.</p>";
+                element.innerHTML = "<p style='color:#FF4B4B; text-align:center; padding-top:220px; font-weight:bold;'>Hata: Bu PDB kodu ({pdb_id}) veritabanında bulunamadı veya ağ bağlantısı kurulamadı.</p>";
             }});
     </script>
 </body>
@@ -442,6 +472,6 @@ viewer_html = f"""
 """
 
 import streamlit.components.v1 as components
-components.html(viewer_html, height=520)
+components.html(viewer_html, height=570)
 
-st.info("💡 **İpucu:** Farenizin sol tuşuyla molekülü dilediğiniz gibi döndürebilir, tekerleğiyle yakınlaşıp uzaklaşarak atomik yapıyı inceleyebilirsiniz.")
+st.info("💡 **İpucu:** İstediğiniz herhangi bir proteinin 4 haneli PDB kodunu (örneğin Google'da 'hemoglobin PDB code' diye aratarak) sağdaki kutucuğa yazıp dünyadaki tüm bilinen yapıları anında laboratuvarınıza getirebilirsiniz.")
