@@ -1,6 +1,8 @@
 import requests
+import re
 
-def search_papers(query, limit=10):
+# dashboard.py ile tam uyumlu olması için limit kelimesini max_results yaptık
+def search_papers(query, max_results=10): 
     url = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
     params = {
         "query": query,
@@ -18,7 +20,8 @@ def search_papers(query, limit=10):
             for p in data:
                 abstract = p.get('abstractText')
                 if abstract and len(abstract) > 30:
-                    clean_abstract = abstract.replace("", "\n").replace("", "").replace("", "")
+                    # Eski bozuk replace() komutları yerine, metinleri HTML etiketlerinden temizleyen sağlam kod
+                    clean_abstract = re.sub(r'<[^>]+>', '', abstract)
                     
                     # KATMAN 8: Atıf Sayısı ve Dergi İsmini Çekiyoruz
                     journal_info = p.get('journalInfo', {})
@@ -33,8 +36,9 @@ def search_papers(query, limit=10):
                         "journal": journal,
                         "citations": citations
                     })
-            return valid_papers[:limit]
+            return valid_papers[:max_results]
         else:
             return []
-    except Exception:
+    except Exception as e:
+         print(f"Hata detayı: {e}")
          return []
