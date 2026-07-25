@@ -143,21 +143,26 @@ with tab1:
 with tab2:
     st.subheader("İnteraktif Epistemik Ağ")
     if st.button("Grafiği Güncelle", type="secondary"):
-        triples = db.get_all_triples(limit=300)
         
-        if triples:  # Eğer veritabanından bağ gelirse grafiği çiz
-            net = Network(height="600px", width="100%", bgcolor="#0E1117", font_color="white", directed=True)
-            for t in triples:
-                net.add_node(t["source"], label=t["source"], color="#FF4B4B", size=15)
-                net.add_node(t["target"], label=t["target"], color="#0068C9", size=15)
-                net.add_edge(t["source"], t["target"], title=t['relation'], label=t["relation"], color="#7C7C8C")
-            net.repulsion(node_distance=150, spring_length=150)
-            net.save_graph("epistemic_graph.html")
-            with open("epistemic_graph.html", "r", encoding="utf-8") as f:
-                components.html(f.read(), height=650)
+        # 1. Bağlantı Kontrolü
+        if db.driver is None:
+            st.error("🚨 Neo4j Bağlantı Hatası: Sistem veritabanına bağlanamadı. Lütfen Streamlit Secrets kısmındaki şifreleri ve URI adresini kontrol edin.")
         else:
-            # İŞTE EKSİK OLAN KISIM BURASI:
-            st.warning("⚠️ Ekrana çizilecek bir bağ bulunamadı. Lütfen önce Katman 1'den bir makale analiz edin veya Neo4j bağlantı ayarlarınızı kontrol edin.")
+            # 2. Veri Çekme İşlemi
+            triples = db.get_all_triples(limit=300)
+            
+            if triples:
+                net = Network(height="600px", width="100%", bgcolor="#0E1117", font_color="white", directed=True)
+                for t in triples:
+                    net.add_node(t["source"], label=t["source"], color="#FF4B4B", size=15)
+                    net.add_node(t["target"], label=t["target"], color="#0068C9", size=15)
+                    net.add_edge(t["source"], t["target"], title=t['relation'], label=t["relation"], color="#7C7C8C")
+                net.repulsion(node_distance=150, spring_length=150)
+                net.save_graph("epistemic_graph.html")
+                with open("epistemic_graph.html", "r", encoding="utf-8") as f:
+                    components.html(f.read(), height=650)
+            else:
+                st.warning("⚠️ Bağlantı başarılı ancak veritabanı tamamen boş. Lütfen 1. Sekmeden bir makale analiz edip ağa ekleyin.")
 
 # --- MODÜL 3: ÇELİŞKİ YÖNETİMİ ---
 with tab3:
