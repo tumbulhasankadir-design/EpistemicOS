@@ -53,9 +53,7 @@ tabs = st.tabs([
     "🧬 3D Modül", "📊 ELN", "⚔️ Çarpıştırıcı"
 ])
 
-# =========================================================================
 # SEKME 1: LİTERATÜR TARAMASI, SEÇİM VE KAVRAMSAL MODELLEME
-# =========================================================================
     with tab1:
         st.header("📚 Literatür Arama ve Makale Seçimi")
         
