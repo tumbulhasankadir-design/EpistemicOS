@@ -143,19 +143,29 @@ with tab1:
 with tab2:
     st.subheader("İnteraktif Epistemik Ağ")
     if st.button("Grafiği Güncelle", type="secondary"):
-        from neo4j import GraphDatabase
-        try:
-            # Hafızayı atlayıp zorla doğrudan bağlanıyoruz
-            test_uri = st.secrets["NEO4J_URI"]
-            test_user = st.secrets["NEO4J_USERNAME"]
-            test_pass = st.secrets["NEO4J_PASSWORD"]
+        
+        if db.driver is None:
+            st.error("🚨 Bağlantı koptu.")
+        else:
+            triples = db.get_all_triples(limit=300)
             
-            test_driver = GraphDatabase.driver(test_uri, auth=(test_user, test_pass))
-            test_driver.verify_connectivity()
-            
-            st.success("✅ BAĞLANTI BAŞARILI! Lütfen sağ üstten 'Clear Cache' yapıp uygulamanızı Reboot edin.")
-        except Exception as e:
-            st.error(f"🚨 GERÇEK HATA: {e}")
+            if triples:
+                from pyvis.network import Network
+                import streamlit.components.v1 as components
+                
+                net = Network(height="600px", width="100%", bgcolor="#0E1117", font_color="white", directed=True)
+                for t in triples:
+                    net.add_node(t["source"], label=t["source"], color="#FF4B4B", size=15)
+                    net.add_node(t["target"], label=t["target"], color="#0068C9", size=15)
+                    net.add_edge(t["source"], t["target"], title=t['relation'], label=t["relation"], color="#7C7C8C")
+                
+                net.repulsion(node_distance=150, spring_length=150)
+                net.save_graph("epistemic_graph.html")
+                with open("epistemic_graph.html", "r", encoding="utf-8") as f:
+                    components.html(f.read(), height=650)
+            else:
+                st.info("📊 Veritabanı (Neo4j) şu an tamamen boş! Ağı görebilmek için lütfen 1. Sekmeden bir makaleyi analiz edip kaydedin.")
+                
 # --- MODÜL 3: ÇELİŞKİ YÖNETİMİ ---
 with tab3:
     st.subheader("⚖️ Çelişki Yönetimi")
