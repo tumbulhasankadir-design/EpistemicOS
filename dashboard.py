@@ -45,7 +45,7 @@ def init_system():
 
 db, archivist = init_system()
 # -----------------------------------------
-# 5. LABORATUVAR SEKMELERİ (9 KATMAN)
+# 5. LABORATUVAR LERİ (9 KATMAN)
 # -----------------------------------------
 tabs = st.tabs([
     "📖 Literatür", "🕸️ Bilgi Ağı", "⚖️ Çelişki", 
@@ -53,20 +53,133 @@ tabs = st.tabs([
     "🧬 3D Modül", "📊 ELN", "⚔️ Çarpıştırıcı"
 ])
 
-# SEKME 1: LİTERATÜR
-with tabs[0]:
-    st.header("📖 Literatür ve Arşiv")
-    query = st.text_input("PubMed'de Aranacak Konu (İngilizce):", placeholder="Örn: Dopamine and Memory")
-    if st.button("Makaleleri Oku ve Ağa Ekle"):
-        with st.spinner("Archivist makaleleri okuyor..."):
-            try:
-                # Gerçek fonksiyona göre parametreleri ayarlayabilirsiniz
-                papers = search_papers(query, max_results=3)
-                for p in papers:
-                    st.write(f"📄 **{p['title']}** okundu.")
-                st.success("Veriler başarıyla Epistemik Ağa işlendi!")
-            except Exception as e:
-                st.info("Arama motoru bağlantısı test ediliyor. Konsol loglarını kontrol edin.")
+# =========================================================================
+    # SEKME 1: LİTERATÜR TARAMASI, SEÇİM VE KAVRAMSAL MODELLEME
+    # =========================================================================
+    with tab1:
+        st.header("📚 Literatür Arama ve Makale Seçimi")
+        
+        # Arama Kutusu ve Butonu
+        colA, colB = st.columns([4, 1])
+        with colA:
+            query = st.text_input("Araştırmak istediğiniz konuyu yazın (Örn: 'multi-agent systems education'):")
+        with colB:
+            search_button = st.button("🔍 50 Makale Getir", use_container_width=True)
+
+        # Hafıza (Session State) Tanımlamaları
+        if 'search_results' not in st.session_state:
+            st.session_state.search_results = []
+        if 'current_page' not in st.session_state:
+            st.session_state.current_page = 0
+        if 'selected_papers' not in st.session_state:
+            st.session_state.selected_papers = []
+
+        # Arama İşlemi (1 Kere Çalışır ve 50 Sonucu Hafızaya Alır)
+        if search_button and query:
+            with st.spinner("Avrupa PubMed veritabanından 50 makale çekiliyor..."):
+                try:
+                    # NOT: core/scholar.py dosyasındaki search_papers fonksiyonuna 50 limitini gönderiyoruz
+                    st.session_state.search_results = search_papers(query, max_results=50)
+                    st.session_state.current_page = 0
+                    st.session_state.selected_papers = [] # Yeni aramada seçilenleri sıfırla
+                except Exception as e:
+                    st.error(f"Bağlantı hatası: {e}")
+
+        # 50 Makale Bulunduysa, Sayfalama (Pagination) Sistemi
+        total_papers = len(st.session_state.search_results)
+        if total_papers > 0:
+            papers_per_page = 10
+            total_pages = (total_papers // papers_per_page) + (1 if total_papers % papers_per_page > 0 else 0)
+            
+            st.success(f"✅ Toplam {total_papers} makale bulundu. Lütfen ağa eklenecekleri seçin.")
+            st.markdown("---")
+            
+            # Sayfalama Kontrolleri
+            col_prev, col_info, col_next = st.columns([1, 2, 1])
+            with col_prev:
+                if st.button("⬅️ Önceki 10", disabled=(st.session_state.current_page == 0)):
+                    st.session_state.current_page -= 1
+                    st.rerun()
+            with col_info:
+                st.markdown(f"<h4 style='text-align: center;'>Sayfa {st.session_state.current_page + 1} / {total_pages}</h4>", unsafe_allow_html=True)
+            with col_next:
+                if st.button("Sonraki 10 ➡️", disabled=(st.session_state.current_page >= total_pages - 1)):
+                    st.session_state.current_page += 1
+                    st.rerun()
+                    
+            st.markdown("---")
+            
+            # O anki sayfanın makalelerini göster
+            start_idx = st.session_state.current_page * papers_per_page
+            end_idx = start_idx + papers_per_page
+            current_papers = st.session_state.search_results[start_idx:end_idx]
+
+            # Makaleleri listele ve yanlarına Checkbox (Seçim Kutusu) koy
+            for i, p in enumerate(current_papers):
+                real_index = start_idx + i
+                
+                with st.expander(f"📄 {p['title']} ({p['year']}) - Atıf: {p.get('citations', 0)}"):
+                    st.write(f"**Yazar:** {p['authors'][0]['name']}")
+                    st.write(f"**Dergi:** {p.get('journal', 'Bilinmiyor')}")
+                    st.info(f"{p['abstract']}")
+                    
+                    # Kullanıcı bu makaleyi seçti mi?
+                    is_selected = real_index in st.session_state.selected_papers
+                    
+                    # Checkbox ile seçimi yakala
+                    if st.checkbox("✅ Bu Makaleyi Bilgi Ağına (Neo4j) Gönder", value=is_selected, key=f"check_{real_index}"):
+                        if real_index not in st.session_state.selected_papers:
+                            st.session_state.selected_papers.append(real_index)
+                    else:
+                        if real_index in st.session_state.selected_papers:
+                            st.session_state.selected_papers.remove(real_index)
+
+            st.markdown("---")
+            
+            # -------------------------------------------------------------
+            # SEÇİLENLERİ ANALİZ ET VE NEO4J'YE GÖNDER BUTONU
+            # -------------------------------------------------------------
+            selected_count = len(st.session_state.selected_papers)
+            st.info(f"Sepetinizde analiz edilmeyi bekleyen **{selected_count}** adet makale var.")
+            
+            if selected_count > 0:
+                if st.button("🧠 Seçilenleri Oku, Kavramları Modelle ve Ağa Ekle", type="primary", use_container_width=True):
+                    with st.spinner(f"{selected_count} Makale AI tarafından okunuyor ve Neo4j'ye örülüyor..."):
+                        
+                        analyzed_concepts = []
+                        
+                        # Sadece seçilenleri döngüye al
+                        for idx in st.session_state.selected_papers:
+                            selected_paper = st.session_state.search_results[idx]
+                            
+                            # 1. Neo4j'ye Ekle
+                            try:
+                                db.add_paper(selected_paper)
+                            except Exception as db_err:
+                                st.warning(f"Neo4j'ye yazarken hata: {db_err}")
+                            
+                            # 2. Arşivci Ajan ile Makaleyi Oku ve Kavram Çıkar
+                            try:
+                                analysis = archivist.read_paper(selected_paper["abstract"])
+                                analyzed_concepts.append({
+                                    "Makale": selected_paper["title"],
+                                    "Kavramlar": analysis.key_concepts
+                                })
+                            except Exception as ai_err:
+                                st.warning("Ajan analizi atlandı (AI Motoru hazır olmayabilir).")
+                                
+                        st.success(f"✅ {selected_count} makale başarıyla arşivlendi ve Bilgi Ağına eklendi!")
+                        
+                        # -------------------------------------------------------------
+                        # ORTAK KAVRAMLARIN MODELLEMESİ (GÖRSEL RAPOR)
+                        # -------------------------------------------------------------
+                        if analyzed_concepts:
+                            st.subheader("🕸️ Yapay Zeka Kavram Haritası")
+                            for res in analyzed_concepts:
+                                st.write(f"**{res['Makale'][:60]}...**")
+                                # Kavramları etiketler halinde göster
+                                tags = " ".join([f"`{c}`" for c in res["Kavramlar"].split(",")])
+                                st.markdown(tags)
 
 # SEKME 2: BİLGİ AĞI
 with tabs[1]:
