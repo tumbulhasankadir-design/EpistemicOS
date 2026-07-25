@@ -192,32 +192,44 @@ with tab4:
     st.subheader("🧬 İn Silico Petri Kabı")
     concepts = db.get_all_concepts()
     if concepts:
-        c1, c2, c3 = st.columns([2, 1, 1])
-        with c1: start_node = st.selectbox("Damlatılacak Molekül", concepts)
-        with c2: initial_dose = st.number_input("Başlangıç Dozu (mM)", min_value=10, max_value=1000, value=100, step=10)
-        with c3: sim_time = st.slider("İzleme Süresi (t)", 10, 200, 100)
-        if st.button("Dinamik Simülasyonu Başlat 🚀", type="primary"):
-            triples = db.get_all_triples(limit=1000)
-            if triples:
-                nodes = list(set([t['source'] for t in triples] + [t['target'] for t in triples]))
-                def system_dynamics(y, t, nodes, edges):
-                    dydt = np.zeros(len(nodes))
-                    for i, node in enumerate(nodes): dydt[i] = -0.03 * y[i]
-                    for edge in edges:
-                        src_i, tgt_i = nodes.index(edge['source']), nodes.index(edge['target'])
-                        k = edge.get('confidence', 0.5) * 0.2
-                        if edge['relation'] in ["UPREGULATES", "CAUSES", "ASSOCIATES_WITH"]: dydt[tgt_i] += k * y[src_i]
-                        elif edge['relation'] in ["DOWNREGULATES", "CONTRADICTS"]: dydt[tgt_i] -= k * y[src_i] * y[tgt_i] * 0.05
-                    return dydt
-                y0 = np.zeros(len(nodes))
-                if start_node in nodes: y0[nodes.index(start_node)] = initial_dose
-                t_steps = np.linspace(0, sim_time, int(sim_time*2))
-                with st.spinner("Çözümleniyor..."): solution = odeint(system_dynamics, y0, t_steps, args=(nodes, triples))
-                fig = go.Figure()
-                for i, node in enumerate(nodes):
-                    if np.max(solution[:, i]) > 1.0: fig.add_trace(go.Scatter(x=t_steps, y=solution[:, i], mode='lines', name=node, line=dict(width=3)))
-                fig.update_layout(title=f"'{start_node}' Enjeksiyonu Kinetiği", xaxis_title="Zaman (t)", yaxis_title="Konsantrasyon", template="plotly_dark")
-                st.plotly_chart(fig, use_container_width=True)
+        # EKRANI İKİYE BÖLÜYORUZ: sim_col (Simülasyon), list_col (Molekül Listesi)
+        sim_col, list_col = st.columns([3, 1])
+        
+        with list_col:
+            st.markdown("##### 🧫 Keşfedilen Yapılar")
+            st.caption(f"Veritabanındaki {len(concepts)} yapı:")
+            # Yapıları sağ tarafta şık bir liste olarak gösteriyoruz
+            for c in sorted(concepts):
+                st.markdown(f"- `{c}`")
+                
+        with sim_col:
+            # BURADAN AŞAĞISI SENİN ORİJİNAL KODUNUN BİREBİR AYNISIDIR
+            c1, c2, c3 = st.columns([2, 1, 1])
+            with c1: start_node = st.selectbox("Damlatılacak Molekül", concepts)
+            with c2: initial_dose = st.number_input("Başlangıç Dozu (mM)", min_value=10, max_value=1000, value=100, step=10)
+            with c3: sim_time = st.slider("İzleme Süresi (t)", 10, 200, 100)
+            if st.button("Dinamik Simülasyonu Başlat 🚀", type="primary"):
+                triples = db.get_all_triples(limit=1000)
+                if triples:
+                    nodes = list(set([t['source'] for t in triples] + [t['target'] for t in triples]))
+                    def system_dynamics(y, t, nodes, edges):
+                        dydt = np.zeros(len(nodes))
+                        for i, node in enumerate(nodes): dydt[i] = -0.03 * y[i]
+                        for edge in edges:
+                            src_i, tgt_i = nodes.index(edge['source']), nodes.index(edge['target'])
+                            k = edge.get('confidence', 0.5) * 0.2
+                            if edge['relation'] in ["UPREGULATES", "CAUSES", "ASSOCIATES_WITH"]: dydt[tgt_i] += k * y[src_i]
+                            elif edge['relation'] in ["DOWNREGULATES", "CONTRADICTS"]: dydt[tgt_i] -= k * y[src_i] * y[tgt_i] * 0.05
+                        return dydt
+                    y0 = np.zeros(len(nodes))
+                    if start_node in nodes: y0[nodes.index(start_node)] = initial_dose
+                    t_steps = np.linspace(0, sim_time, int(sim_time*2))
+                    with st.spinner("Çözümleniyor..."): solution = odeint(system_dynamics, y0, t_steps, args=(nodes, triples))
+                    fig = go.Figure()
+                    for i, node in enumerate(nodes):
+                        if np.max(solution[:, i]) > 1.0: fig.add_trace(go.Scatter(x=t_steps, y=solution[:, i], mode='lines', name=node, line=dict(width=3)))
+                    fig.update_layout(title=f"'{start_node}' Enjeksiyonu Kinetiği", xaxis_title="Zaman (t)", yaxis_title="Konsantrasyon", template="plotly_dark")
+                    st.plotly_chart(fig, use_container_width=True)
 
 # --- MODÜL 5: TARİHSEL EVRİM ---
 with tab5:
