@@ -34,28 +34,26 @@ except ImportError:
     st.stop()
 
 # -----------------------------------------
-# 3. LLM (YAPAY ZEKA) AYARLARI
-# -----------------------------------------
-# Streamlit Cloud "Secrets" üzerinden şifreyi alır
-api_key = os.getenv("GROQ_API_KEY")
-if not api_key and "GROQ_API_KEY" in st.secrets:
-    api_key = st.secrets["GROQ_API_KEY"]
-
-if api_key:
-    lm = dspy.LM('groq/llama-3.1-8b-instant', api_key=api_key)
-    dspy.settings.configure(lm=lm)
-else:
-    st.warning("⚠️ API Anahtarı eksik! Streamlit Gelişmiş Ayarlar (Secrets) kısmına GROQ_API_KEY ekleyin.")
-
-# -----------------------------------------
-# 4. SAYFA YAPILANDIRMASI VE BAŞLATMA
+# 3. ve 4. BÖLÜM: YAPAY ZEKA VE BAŞLATMA (Çatışma Giderilmiş)
 # -----------------------------------------
 st.set_page_config(page_title="Idea Co-Pilot", page_icon="🧪", layout="wide")
 st.title("🧪 Idea Co-Pilot - Canlı Araştırma Motoru")
 
 @st.cache_resource
 def init_system():
-    # Veritabanının her yenilemede silinmemesi için cache (ön bellek) kullanıyoruz.
+    # Şifreyi güvenli kasadan çek
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key and "GROQ_API_KEY" in st.secrets:
+        api_key = st.secrets["GROQ_API_KEY"]
+    
+    # DSPy ayarını SADECE BİR KERE (burada) yapıyoruz
+    if api_key:
+        lm = dspy.LM('groq/llama-3.1-8b-instant', api_key=api_key)
+        dspy.settings.configure(lm=lm)
+    else:
+        st.warning("⚠️ API Anahtarı eksik! Streamlit Secrets kısmına GROQ_API_KEY ekleyin.")
+
+    # Veritabanı ve Ajanları başlat
     return EpistemicGraph(), ArchivistAgent()
 
 db, archivist = init_system()
