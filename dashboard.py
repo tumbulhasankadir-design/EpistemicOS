@@ -1,6 +1,5 @@
 import sys
 import os
-import subprocess
 import time
 import requests
 import streamlit as st
@@ -8,55 +7,6 @@ import streamlit.components.v1 as components
 import dspy
 from dotenv import load_dotenv
 from pyvis.network import Network
-
-# 🚀 OTOMATİK KURULUM MOTORU
-def ensure_packages():
-    packages = {
-        "numpy": "numpy",
-        "scipy": "scipy",
-        "plotly": "plotly",
-        "py3Dmol": "py3Dmol", 
-        "ipython_genutils": "ipython_genutils", 
-        "ipywidgets": "ipywidgets",
-        "stmol": "stmol",
-        "pandas": "pandas"
-    }
-    for module, pip_name in packages.items():
-        try:
-            __import__(module)
-        except ImportError:
-            print(f"⚠️ {pip_name} bulunamadı. Yükleniyor...")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", pip_name, "requests"])
-            print(f"✅ {pip_name} başarıyla yüklendi!")
-
-ensure_packages()
-
-import numpy as np
-import pandas as pd
-from scipy.integrate import odeint
-import plotly.graph_objects as go
-import py3Dmol
-from stmol import showmol
-
-load_dotenv()
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
-
-from core.database import EpistemicGraph
-from agents.archivist import ArchivistAgent
-from core.scholar import search_papers
-
-lm = dspy.LM('groq/llama-3.1-8b-instant', api_key=os.getenv("GROQ_API_KEY"))
-
-st.set_page_config(page_title="EpistemicOS", page_icon="🧪", layout="wide")
-st.title("🧪 EpistemicOS - Canlı Araştırma Motoru")
-
-@st.cache_resource
-def init_system():
-    return EpistemicGraph(), ArchivistAgent()
-
-db, archivist = init_system()
 
 # --- YENİ EKLENEN ÇARPIŞTIRICI (DOCKING) YAPAY ZEKA İMZASI ---
 class DockingSignature(dspy.Signature):
