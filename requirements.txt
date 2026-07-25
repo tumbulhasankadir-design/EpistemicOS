@@ -1,0 +1,10 @@
+streamlit
+dspy-ai
+pyvis
+python-dotenv
+requests
+pandas
+scipy
+plotly
+stmol
+py3Dmol
