@@ -1,23 +1,17 @@
 import dspy
 
-class ArchivistAgent:
+class ExtractTriples(dspy.Signature):
+    """Metinden bilimsel ilişkileri çıkarır."""
+    text = dspy.InputField(desc="Bilimsel makale özeti")
+    triples = dspy.OutputField(desc="Çıkarılan ilişkiler. Format: Kaynak | İLİŞKİ_TÜRÜ | Hedef | Güven_Skoru(0.0-1.0). Her ilişki yeni bir satırda olmalı. İlişki türleri: UPREGULATES, DOWNREGULATES, ASSOCIATES_WITH, CAUSES, CONTRADICTS")
+
+class ArchivistAgent(dspy.Module):
     def __init__(self):
-        try:
-            self.extract = dspy.Predict("abstract -> key_concepts")
-        except Exception:
-            self.extract = None
+        super().__init__()
+        self.extractor = dspy.Predict(ExtractTriples)
 
-    def read_paper(self, abstract):
-        """Makalenin özetini okur ve anahtar kavramları çıkarır"""
-        class AnalysisResult:
-            def __init__(self, concepts):
-                self.key_concepts = concepts
-
-        try:
-            if self.extract and hasattr(dspy.settings, 'lm') and dspy.settings.lm:
-                res = self.extract(abstract=abstract)
-                return res
-            else:
-                return AnalysisResult("Epistemoloji, Bilgi Ağı, Çoklu Ajan Sistemleri, Veri Modelleme")
-        except Exception:
-            return AnalysisResult("Eğitim Teknolojileri, Analitik Sistemler, Yapay Zeka")
+    def forward(self, text):
+        return self.extractor(text=text)
+        
+    def __call__(self, text):
+        return self.forward(text=text)
