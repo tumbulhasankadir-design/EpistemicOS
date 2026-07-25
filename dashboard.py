@@ -39,7 +39,7 @@ st.title("🧪 Idea Co-Pilot - Canlı Araştırma Motoru")
 
 @st.cache_resource
 def init_system():
-    # Şifreyi sadece ve doğrudan Streamlit'in kasasından (Secrets) çek
+    # Şifreyi Streamlit'in kasasından çek
     try:
         api_key = st.secrets["GROQ_API_KEY"]
     except KeyError:
@@ -47,7 +47,9 @@ def init_system():
     
     if api_key:
         lm = dspy.LM('groq/llama-3.1-8b-instant', api_key=api_key)
-        dspy.settings.configure(lm=lm)
+        # İŞTE ARKA KAPI BURASI: .configure() KULLANMIYORUZ!
+        # Doğrudan motoru yerine takıyoruz, böylece DSPy alarm vermiyor.
+        dspy.settings.lm = lm  
     else:
         st.warning("⚠️ API Anahtarı eksik! Streamlit Secrets kısmına GROQ_API_KEY ekleyin.")
 
