@@ -53,16 +53,20 @@ tabs = st.tabs([
     "🧬 3D Modül", "📊 ELN", "⚔️ Çarpıştırıcı"
 ])
 
+# =========================================================================
 # SEKME 1: LİTERATÜR TARAMASI, SEÇİM VE KAVRAMSAL MODELLEME
-    with tab1:
-        st.header("📚 Literatür Arama ve Makale Seçimi")
-        
-        # Arama Kutusu ve Butonu
-        colA, colB = st.columns([4, 1])
-        with colA:
-            query = st.text_input("Araştırmak istediğiniz konuyu yazın (Örn: 'multi-agent systems education'):")
-        with colB:
-            search_button = st.button("🔍 50 Makale Getir", use_container_width=True)
+# =========================================================================
+with tab1:
+    st.header("📚 Literatür Arama ve Makale Seçimi")
+    
+    # Arama Kutusu ve Butonu
+    colA, colB = st.columns([4, 1])
+    with colA:
+        query = st.text_input("Araştırmak istediğiniz konuyu yazın (Örn: 'multi-agent systems education'):")
+    with colB:
+        search_button = st.button("🔍 50 Makale Getir", use_container_width=True)
+
+    # ... (Kodun geri kalanı da bu hizada devam edecek)
 
         # Hafıza (Session State) Tanımlamaları
         if 'search_results' not in st.session_state:
