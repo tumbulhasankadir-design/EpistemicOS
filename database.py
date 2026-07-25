@@ -1,16 +1,20 @@
 import os
-from neo4j import GraphDatabase
-from dotenv import load_dotenv
+import streamlit as st
 
-load_dotenv()
+# Şifreleri ve linki açıkça yazmak yerine gizli kasadan çağırıyoruz
+neo4j_uri = os.getenv("NEO4J_URI")
+if not neo4j_uri and "NEO4J_URI" in st.secrets:
+    neo4j_uri = st.secrets["NEO4J_URI"]
 
-class EpistemicGraph:
-    def __init__(self):
-        uri = "neo4j+s://9ab0391b.databases.neo4j.io"
-        user = "neo4j"
-        password = "iHgEUIABw1huW0gRSM6olzuNE_Ym5gyFAIywk0sVijo"
-        self.driver = GraphDatabase.driver(uri, auth=(user, password))
-        self.setup_constraints()
+neo4j_user = os.getenv("NEO4J_USERNAME")
+if not neo4j_user and "NEO4J_USERNAME" in st.secrets:
+    neo4j_user = st.secrets["NEO4J_USERNAME"]
+
+neo4j_password = os.getenv("NEO4J_PASSWORD")
+if not neo4j_password and "NEO4J_PASSWORD" in st.secrets:
+    neo4j_password = st.secrets["NEO4J_PASSWORD"]
+
+# Sonrasında kendi bağlantı kodun (Örn: GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))) devam edebilir.
 
     def setup_constraints(self):
         query = "CREATE CONSTRAINT IF NOT EXISTS FOR (c:Concept) REQUIRE c.name IS UNIQUE"
