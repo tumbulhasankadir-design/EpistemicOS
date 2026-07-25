@@ -388,8 +388,6 @@ with tab9:
                     st.write(result.biological_outcome)
 
 # --- MODÜL 6: 3D MOLEKÜLER KENETLENME VE YAPI GÖRÜNTÜLEYİCİ ---
-# (Bu kodu mevcut sekmelerinin veya tab yapıların sonuna güvenle ekleyebilirsin)
-
 st.markdown("---")
 st.subheader("🔬 3D Moleküler Kenetlenme ve Yapı Görüntüleyici (PDB Viewer)")
 st.caption("Bilinen biyolojik yapıların ve reseptör-ligand kilitlenmelerinin (örneğin Spike proteini ve ACE2) üç boyutlu atomik analizi.")
@@ -405,14 +403,14 @@ pdb_options = {
 selected_complex = st.selectbox("İncelenecek Moleküler Kompleks / Virüs Eşleşmesi", list(pdb_options.keys()))
 pdb_id = pdb_options[selected_complex]
 
-# 3Dmol.js HTML / JavaScript Entegrasyonu (Sıfır ek paket gerektirir, tarayıcıda doğrudan çalışır)
+# Saf JavaScript (Fetch API) kullanan kusursuz 3Dmol.js Entegrasyonu
 viewer_html = f"""
 <!DOCTYPE html>
 <html>
 <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.3/3Dmol-min.js"></script>
     <style>
-        body {{ margin: 0; background-color: #0E1117; color: white; }}
+        body {{ margin: 0; background-color: #0E1117; color: white; font-family: sans-serif; }}
         #container {{ width: 100%; height: 500px; position: relative; }}
     </style>
 </head>
@@ -423,26 +421,27 @@ viewer_html = f"""
         let config = {{ backgroundColor: "#0E1117" }};
         let viewer = $3Dmol.createViewer(element, config);
         
-        // Protein Data Bank'ten (PDB) gerçek atomik koordinatları çekiyoruz
-        jQuery.ajax({{
-            url: "https://files.rcsb.org/download/{pdb_id}.pdb",
-            success: function(data) {{
+        // Yerleşik Fetch API ile RCSB PDB veritabanından modeli çekiyoruz
+        fetch("https://files.rcsb.org/download/{pdb_id}.pdb")
+            .then(response => {{
+                if (!response.ok) throw new Error("Ağ hatası");
+                return response.text();
+            }})
+            .then(data => {{
                 viewer.addModel(data, "pdb");
-                viewer.setStyle({{}}, {{cartoon: {{color: 'spectrum'}} }});  // Renkli spektral sarmal gösterimi
+                viewer.setStyle({{}}, {{cartoon: {{color: 'spectrum'}} }});
                 viewer.zoomTo();
                 viewer.render();
-            }},
-            error: function(xhr, textStatus, error) {{
-                element.innerHTML = "<p style='color:red; text-align:center; padding-top:200px;'>3D Veri yüklenirken bir hata oluştu.</p>";
-            }}
-        }});
+            }})
+            .catch(error => {{
+                element.innerHTML = "<p style='color:red; text-align:center; padding-top:200px;'>3D PDB Verisi yüklenirken bir sorun oluştu.</p>";
+            }});
     </script>
 </body>
 </html>
 """
 
-# Streamlit bileşeni olarak ekrana basıyoruz
 import streamlit.components.v1 as components
 components.html(viewer_html, height=520)
 
-st.info("💡 **İpucu:** Farenizin sol tuşuyla molekülü dilediğiniz açıda döndürebilir, tekerleğiyle yakınlaşıp uzaklaşarak atomik bağları ve hidrojen köprülerini inceleyebilirsiniz.")
+st.info("💡 **İpucu:** Farenizin sol tuşuyla molekülü dilediğiniz gibi döndürebilir, tekerleğiyle yakınlaşıp uzaklaşarak atomik yapıyı inceleyebilirsiniz.")
