@@ -3,13 +3,15 @@ import streamlit as st
 
 class EpistemicGraph:
     def __init__(self):
-        try:
-            uri = st.secrets["NEO4J_URI"]
-            user = st.secrets["NEO4J_USERNAME"]
-            password = st.secrets["NEO4J_PASSWORD"]
-            self.driver = GraphDatabase.driver(uri, auth=(user, password))
-        except Exception:
-            self.driver = None
+        # Kalkanı indirdik: Hata varsa sistem doğrudan kırmızı ekranla gerçek sebebi söyleyecek
+        uri = st.secrets["NEO4J_URI"]
+        user = st.secrets["NEO4J_USERNAME"]
+        password = st.secrets["NEO4J_PASSWORD"]
+        
+        self.driver = GraphDatabase.driver(uri, auth=(user, password))
+        
+        # Bağlantıyı zorla test et
+        self.driver.verify_connectivity() 
 
     def close(self):
         if self.driver:
