@@ -39,24 +39,11 @@ st.title("🧪 Idea Co-Pilot - Canlı Araştırma Motoru")
 
 @st.cache_resource
 def init_system():
-    # Şifreyi Streamlit'in kasasından çek
-    try:
-        api_key = st.secrets["GROQ_API_KEY"]
-    except KeyError:
-        api_key = None
-    
-    if api_key:
-        lm = dspy.LM('groq/llama-3.1-8b-instant', api_key=api_key)
-        # İŞTE ARKA KAPI BURASI: .configure() KULLANMIYORUZ!
-        # Doğrudan motoru yerine takıyoruz, böylece DSPy alarm vermiyor.
-        dspy.settings.lm = lm  
-    else:
-        st.warning("⚠️ API Anahtarı eksik! Streamlit Secrets kısmına GROQ_API_KEY ekleyin.")
-
+    # DSPY ayarlarının hepsini buradan çöpe attık!
+    # Sadece veritabanı ve ajanları başlatıp çıkıyoruz.
     return EpistemicGraph(), ArchivistAgent()
 
 db, archivist = init_system()
-
 # -----------------------------------------
 # 5. LABORATUVAR SEKMELERİ (9 KATMAN)
 # -----------------------------------------
