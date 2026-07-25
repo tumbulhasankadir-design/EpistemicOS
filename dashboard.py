@@ -60,20 +60,23 @@ tabs = st.tabs([
 with tabs[0]:
     st.header("📚 Literatür Arama ve Makale Seçimi")
     
-    # Arama Kutusu ve Butonu
-    colA, colB = st.columns([4, 1])
+    # Arama Kutusu, Getir Butonu ve TEMİZLE Butonu
+    colA, colB, colC = st.columns([4, 1, 1])
     with colA:
         query = st.text_input("Araştırmak istediğiniz konuyu yazın (Örn: 'multi-agent systems'):")
     with colB:
         search_button = st.button("🔍 50 Makale Getir", use_container_width=True)
+    with colC:
+        clear_button = st.button("🗑️ Temizle", use_container_width=True)
 
-    # Hafıza (Session State) Tanımlamaları
-    if 'search_results' not in st.session_state:
+    # Hafızayı Temizleme İşlemi
+    if clear_button:
         st.session_state.search_results = []
-    if 'current_page' not in st.session_state:
         st.session_state.current_page = 0
-    if 'selected_papers' not in st.session_state:
         st.session_state.selected_papers = []
+        st.rerun()
+
+    # ... (Kodun geri kalanı aşağıda aynı şekilde devam edecek)
 
     # Arama İşlemi (1 Kere Çalışır ve 50 Sonucu Hafızaya Alır)
     if search_button and query:
