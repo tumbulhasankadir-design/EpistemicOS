@@ -266,7 +266,7 @@ with tab7:
                 """)
         else:
             with st.expander("🧬 Protein ve Virüs Katlanma Rehberi", expanded=True):
-                st.markdown(":) **gülücük:** Proteinin omurgası | 🟡 **Sarı Kesik Çizgiler:** Zayıf Hidrojen Bağları")
+                st.markdown("Protein omurgası, amino asitlerin yan grupları (R grupları) hariç tutulduğunda, tekrar eden ana atom zincirini (azot, alfa-karbon ve karbonil karbonu) ve aralarındaki peptit bağlarını ifade eder. Bu temel yapı, proteine temel şeklini ve sarmal/tabaka gibi ikincil yapısal düzenini kazandırır. **CHON:** Proteinin omurgası | 🟡 **Sarı Kesik Çizgiler:** Zayıf Hidrojen Bağları")
 
     with col_view:
         if render_btn and search_term:
