@@ -5,7 +5,6 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 import dspy
-from dotenv import load_dotenv
 from pyvis.network import Network
 import numpy as np
 import pandas as pd
@@ -41,16 +40,18 @@ st.title("🧪 Idea Co-Pilot - Canlı Araştırma Motoru")
 
 @st.cache_resource
 def init_system():
-    # Şifreyi güvenli kasadan çek
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key and "GROQ_API_KEY" in st.secrets:
+    # Şifreyi sadece ve doğrudan Streamlit'in kasasından (Secrets) çek
+    try:
         api_key = st.secrets["GROQ_API_KEY"]
+    except KeyError:
+        api_key = None
     
-    # DSPy ayarını SADECE BİR KERE (burada) yapıyoruz
+    if api_key:
+        lm = dspy.LM('groq/llama-3.1-8b-instant', api_key=api_key)
+        dspy.settings.configure(lm=lm)
     else:
         st.warning("⚠️ API Anahtarı eksik! Streamlit Secrets kısmına GROQ_API_KEY ekleyin.")
 
-    # Veritabanı ve Ajanları başlat
     return EpistemicGraph(), ArchivistAgent()
 
 db, archivist = init_system()
