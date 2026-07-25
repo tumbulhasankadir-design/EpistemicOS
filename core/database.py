@@ -3,7 +3,6 @@ import streamlit as st
 
 class EpistemicGraph:
     def __init__(self):
-        # Streamlit bulutundan şifreleri al, yoksa simülasyona geç
         try:
             uri = st.secrets["NEO4J_URI"]
             user = st.secrets["NEO4J_USERNAME"]
