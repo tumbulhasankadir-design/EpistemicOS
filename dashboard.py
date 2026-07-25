@@ -144,7 +144,8 @@ with tab2:
     st.subheader("İnteraktif Epistemik Ağ")
     if st.button("Grafiği Güncelle", type="secondary"):
         triples = db.get_all_triples(limit=300)
-        if triples:
+        
+        if triples:  # Eğer veritabanından bağ gelirse grafiği çiz
             net = Network(height="600px", width="100%", bgcolor="#0E1117", font_color="white", directed=True)
             for t in triples:
                 net.add_node(t["source"], label=t["source"], color="#FF4B4B", size=15)
@@ -154,6 +155,9 @@ with tab2:
             net.save_graph("epistemic_graph.html")
             with open("epistemic_graph.html", "r", encoding="utf-8") as f:
                 components.html(f.read(), height=650)
+        else:
+            # İŞTE EKSİK OLAN KISIM BURASI:
+            st.warning("⚠️ Ekrana çizilecek bir bağ bulunamadı. Lütfen önce Katman 1'den bir makale analiz edin veya Neo4j bağlantı ayarlarınızı kontrol edin.")
 
 # --- MODÜL 3: ÇELİŞKİ YÖNETİMİ ---
 with tab3:
