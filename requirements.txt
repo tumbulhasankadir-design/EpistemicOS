@@ -8,3 +8,8 @@ scipy
 plotly
 stmol
 py3Dmol
+numpy
+neo4j
+qdrant-client
+langchain
+python-docx
