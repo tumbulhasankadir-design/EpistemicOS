@@ -104,7 +104,7 @@ with tab1:
         search_query = st.text_input("Araştırma Konusu", placeholder="Örn: cortisol immune system")
         if st.button("PubMed'de Ara", type="primary"):
             with st.spinner("Tıbbi literatür taranıyor..."):
-                st.session_state.found_papers = search_papers(search_query, limit=10)
+                st.session_state.found_papers = search_papers(search_query, max_results=20)
         
         if "found_papers" in st.session_state and st.session_state.found_papers:
             st.success(f"{len(st.session_state.found_papers)} makale bulundu.")
