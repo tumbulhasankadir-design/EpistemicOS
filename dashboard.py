@@ -47,9 +47,6 @@ def init_system():
         api_key = st.secrets["GROQ_API_KEY"]
     
     # DSPy ayarını SADECE BİR KERE (burada) yapıyoruz
-    if api_key:
-        lm = dspy.LM('groq/llama-3.1-8b-instant', api_key=api_key)
-        dspy.settings.configure(lm=lm)
     else:
         st.warning("⚠️ API Anahtarı eksik! Streamlit Secrets kısmına GROQ_API_KEY ekleyin.")
 
