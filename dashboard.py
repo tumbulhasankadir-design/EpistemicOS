@@ -266,7 +266,7 @@ with tab7:
                 """)
         else:
             with st.expander("🧬 Protein ve Virüs Katlanma Rehberi", expanded=True):
-                st.markdown("🌈 **Renkli Şeritler:** Proteinin omurgası | 🟡 **Sarı Kesik Çizgiler:** Zayıf Hidrojen Bağları")
+                st.markdown(":) **gülücük:** Proteinin omurgası | 🟡 **Sarı Kesik Çizgiler:** Zayıf Hidrojen Bağları")
 
     with col_view:
         if render_btn and search_term:
