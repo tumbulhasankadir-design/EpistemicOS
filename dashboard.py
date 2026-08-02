@@ -8,7 +8,10 @@ import streamlit.components.v1 as components
 import dspy
 from pyvis.network import Network
 
-# 🚀 OTOMATİK KURULUM MOTORU
+# ----------------------------------------------------------------
+# 🚀 OTOMATİK KURULUM MOTORU (Cache eklenerek optimize edildi)
+# ----------------------------------------------------------------
+@st.cache_resource
 def ensure_packages():
     packages = {
         "numpy": "numpy",
@@ -28,6 +31,7 @@ def ensure_packages():
 
 ensure_packages()
 
+# Kurulumlardan sonra güvenli içe aktarmalar
 import numpy as np
 import pandas as pd
 from scipy.integrate import odeint
@@ -35,34 +39,284 @@ import plotly.graph_objects as go
 import py3Dmol
 from stmol import showmol
 
-# -------------------------------------------------------------
+# ----------------------------------------------------------------
 # 1. ORTAM VE YOL AYARLARI
-# -------------------------------------------------------------
+# ----------------------------------------------------------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
+# Yerel modüller (Bunların proje klasörünüzde olduğundan emin olun)
 from core.database import EpistemicGraph
 from agents.archivist import ArchivistAgent
 from core.scholar import search_papers
 
-# -------------------------------------------------------------
-# 2. BULUT UYUMLU ŞİFRE ÇEKME VE YAPAY ZEKA BAŞLATMA
-# -------------------------------------------------------------
+# ----------------------------------------------------------------
+# 2. SAYFA YAPISI VE STİL
+# ----------------------------------------------------------------
 st.set_page_config(page_title="EpistemicOS", page_icon="🧪", layout="wide")
-st.title("🧪 EpistemicOS - Canlı Araştırma Motoru")
 
-# Şifreyi bulut kasasından alıyoruz (.env iptal edildi)
+# Modern Premium Tema
+st.markdown("""
+<style>
+[data-testid="stAppViewContainer"] {
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3f 50%, #150f2e 100%);
+    color: #f0f4ff;
+}
+[data-testid="stHeader"] {
+    background: transparent;
+    border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+}
+[data-testid="stSidebar"] {
+    background: rgba(15, 15, 35, 0.95);
+    border-right: 1px solid rgba(168, 85, 247, 0.2);
+}
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 2.5rem;
+    max-width: 1500px;
+}
+.stTabs [role="tablist"] {
+    border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+}
+.stTabs [role="tablist"] button {
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    color: #9ca3af;
+    border: none;
+    margin-right: 0.5rem;
+    transition: all 0.3s ease;
+}
+.stTabs [role="tablist"] button[aria-selected="true"] {
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+}
+.stTabs [role="tablist"] button:hover {
+    border-bottom-color: transparent;
+    background: rgba(168, 85, 247, 0.2);
+}
+.hero-card {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(139, 92, 246, 0.08));
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(168, 85, 247, 0.15);
+    margin-bottom: 1.5rem;
+}
+.hero-card h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    background: linear-gradient(135deg, #fbbf24 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.hero-card p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+.stButton > button {
+    border-radius: 12px;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(168, 85, 247, 0.4);
+    border-color: rgba(168, 85, 247, 0.8);
+}
+.stButton > button[kind="secondary"] {
+    background: rgba(168, 85, 247, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+.stTextInput > div > div > input,
+.stSelectbox > div > div > select,
+.stNumberInput input,
+.stTextArea textarea {
+    background: rgba(168, 85, 247, 0.08) !important;
+    border: 1px solid rgba(168, 85, 247, 0.25) !important;
+    border-radius: 12px !important;
+    color: #f0f4ff !important;
+}
+.stTextInput > div > div > input::placeholder,
+.stSelectbox > div > div > select::placeholder {
+    color: rgba(241, 245, 249, 0.5);
+}
+[data-testid="stExpander"] {
+    background: rgba(168, 85, 247, 0.08);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    border-radius: 12px;
+}
+.stExpander > button {
+    color: #f0f4ff;
+}
+.stSuccess {
+    background: rgba(34, 197, 94, 0.15) !important;
+    border: 1px solid rgba(34, 197, 94, 0.3) !important;
+    border-radius: 12px;
+}
+.stError {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    border-radius: 12px;
+}
+.stInfo {
+    background: rgba(59, 130, 246, 0.15) !important;
+    border: 1px solid rgba(59, 130, 246, 0.3) !important;
+    border-radius: 12px;
+}
+.stWarning {
+    background: rgba(251, 191, 36, 0.15) !important;
+    border: 1px solid rgba(251, 191, 36, 0.3) !important;
+    border-radius: 12px;
+}
+h1, h2, h3, h4, h5, h6 {
+    color: #f0f4ff !important;
+    letter-spacing: 0.5px;
+}
+.stSubheader {
+    color: #dbeafe !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Sidebar Menüsü
+with st.sidebar:
+    st.markdown("<h3 style='color: #a855f7; margin-bottom: 1.5rem;'>📚 BİLGİ İŞLEMLERİ</h3>", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem;'>Soru Oluştur</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem;'>Sözleşme Oluştur</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem;'>İhtarneme Hazırla</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem;'>CV Oluştur</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af;'>Kaynak Yönetimi</div>""", unsafe_allow_html=True)
+    
+    st.divider()
+    st.markdown("<h3 style='color: #a855f7; margin: 1.5rem 0;'>🔬 DEVLETİŞLEMLERİ</h3>", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem;'>Akademik Asistan</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem;'>Formül ve Hesaplamalar</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af;'>Veri Görselleştir</div>""", unsafe_allow_html=True)
+    
+    st.divider()
+    st.markdown("<h3 style='color: #a855f7; margin: 1.5rem 0;'>⚙️ SİSTEM</h3>", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem;'>Ayarlar</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem;'>Entegrasyonlar</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style='font-size: 0.85rem; color: #9ca3af;'>Sistem Durumu</div>""", unsafe_allow_html=True)
+
+# Ana İçerik
+st.markdown("""
+<div class="hero-card">
+    <h1>🧪 EpistemicOS</h1>
+    <p>Yapay zeka destekli araştırma platformu — bilimsel bilgiyi organize eder, ilişkileri görselleştirir ve hipotez üretimini otomatikleştirir.</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Hızlı Eylemler Bölümü
+st.markdown("<h2 style='color: #f0f4ff; margin: 2rem 0 1rem;'>⚡ Hızlı Eylemler</h2>", unsafe_allow_html=True)
+col1, col2, col3, col4, col5 = st.columns(5)
+with col1:
+    st.markdown("""
+    <div style='background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 1.5rem; text-align: center;'>
+        <div style='font-size: 2rem; margin-bottom: 0.5rem;'>❓</div>
+        <div style='font-size: 0.9rem; color: #dbeafe; font-weight: 600;'>Soru ve Hipotez</div>
+        <div style='font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;'>Araştırma sorusu</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col2:
+    st.markdown("""
+    <div style='background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 16px; padding: 1.5rem; text-align: center;'>
+        <div style='font-size: 2rem; margin-bottom: 0.5rem;'>📚</div>
+        <div style='font-size: 0.9rem; color: #dbeafe; font-weight: 600;'>Literatür Taraması</div>
+        <div style='font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;'>Akademik kaynaklar</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col3:
+    st.markdown("""
+    <div style='background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 16px; padding: 1.5rem; text-align: center;'>
+        <div style='font-size: 2rem; margin-bottom: 0.5rem;'>📊</div>
+        <div style='font-size: 0.9rem; color: #dbeafe; font-weight: 600;'>Veri Analizi</div>
+        <div style='font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;'>Verilerinizi görselleştir</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col4:
+    st.markdown("""
+    <div style='background: rgba(251, 146, 60, 0.15); border: 1px solid rgba(251, 146, 60, 0.3); border-radius: 16px; padding: 1.5rem; text-align: center;'>
+        <div style='font-size: 2rem; margin-bottom: 0.5rem;'>🧪</div>
+        <div style='font-size: 0.9rem; color: #dbeafe; font-weight: 600;'>Deney Tasarımı</div>
+        <div style='font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;'>Deneyler ve projeler</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col5:
+    st.markdown("""
+    <div style='background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 1.5rem; text-align: center;'>
+        <div style='font-size: 2rem; margin-bottom: 0.5rem;'>🧬</div>
+        <div style='font-size: 0.9rem; color: #dbeafe; font-weight: 600;'>AI Oluştur</div>
+        <div style='font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;'>Model eğitimi</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# İstatistik Kartları
+st.markdown("<h2 style='color: #f0f4ff; margin: 2rem 0 1rem;'>📊 Bilimsel Göstergeler</h2>", unsafe_allow_html=True)
+stat_col1, stat_col2, stat_col3, stat_col4, stat_col5 = st.columns(5)
+with stat_col1:
+    st.markdown("""
+    <div style='background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 14px; padding: 1.25rem; text-align: center;'>
+        <div style='font-size: 2rem; font-weight: 800; color: #fbbf24; margin-bottom: 0.3rem;'>12</div>
+        <div style='font-size: 0.85rem; color: #cbd5e1;'>Yapılandırılan Bilgi</div>
+        <div style='font-size: 0.7rem; color: #9ca3af; margin-top: 0.3rem;'>Bu ay</div>
+    </div>
+    """, unsafe_allow_html=True)
+with stat_col2:
+    st.markdown("""
+    <div style='background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 14px; padding: 1.25rem; text-align: center;'>
+        <div style='font-size: 2rem; font-weight: 800; color: #60a5fa; margin-bottom: 0.3rem;'>8</div>
+        <div style='font-size: 0.85rem; color: #cbd5e1;'>Tamamlanan İşlem</div>
+        <div style='font-size: 0.7rem; color: #9ca3af; margin-top: 0.3rem;'>Bu ay</div>
+    </div>
+    """, unsafe_allow_html=True)
+with stat_col3:
+    st.markdown("""
+    <div style='background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 14px; padding: 1.25rem; text-align: center;'>
+        <div style='font-size: 2rem; font-weight: 800; color: #a855f7; margin-bottom: 0.3rem;'>34</div>
+        <div style='font-size: 0.85rem; color: #cbd5e1;'>Soru Sorulması</div>
+        <div style='font-size: 0.7rem; color: #9ca3af; margin-top: 0.3rem;'>Bu ay</div>
+    </div>
+    """, unsafe_allow_html=True)
+with stat_col4:
+    st.markdown("""
+    <div style='background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 14px; padding: 1.25rem; text-align: center;'>
+        <div style='font-size: 2rem; font-weight: 800; color: #22c55e; margin-bottom: 0.3rem;'>34</div>
+        <div style='font-size: 0.85rem; color: #cbd5e1;'>Analiz Tamamlandı</div>
+        <div style='font-size: 0.7rem; color: #9ca3af; margin-top: 0.3rem;'>Bu ay</div>
+    </div>
+    """, unsafe_allow_html=True)
+with stat_col5:
+    st.markdown("""
+    <div style='background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.25); border-radius: 14px; padding: 1.25rem; text-align: center;'>
+        <div style='font-size: 2rem; font-weight: 800; color: #ec4899; margin-bottom: 0.3rem;'>%82</div>
+        <div style='font-size: 0.85rem; color: #cbd5e1;'>Başarı Oranı</div>
+        <div style='font-size: 0.7rem; color: #9ca3af; margin-top: 0.3rem;'>Tüm zamanlar</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ----------------------------------------------------------------
+# 3. BULUT UYUMLU ŞİFRE ÇEKME VE YAPAY ZEKA BAŞLATMA
+# ----------------------------------------------------------------
 try:
-    groq_api_key = st.secrets["GROQ_API_KEY"]
-except (KeyError, FileNotFoundError):
+    groq_api_key = st.secrets.get("GROQ_API_KEY", os.getenv("GROQ_API_KEY"))
+except Exception:
     groq_api_key = os.getenv("GROQ_API_KEY")
 
 if not groq_api_key:
-    st.error("⚠️ GROQ API Anahtarı bulunamadı! Lütfen Streamlit Settings -> Secrets bölümüne ekleyin.")
+    st.error("⚠️ GROQ API Anahtarı bulunamadı! Lütfen Streamlit Settings -> Secrets bölümüne ekleyin veya ortam değişkeni olarak ayarlayın.")
     st.stop()
 
-# DSPy Motorunu sessizce kuruyoruz (Thread hatası verdirtmeden)
 lm = dspy.LM('groq/llama-3.1-8b-instant', api_key=groq_api_key)
 
 @st.cache_resource
@@ -83,7 +337,7 @@ class HypothesisSignature(dspy.Signature):
     hypothesis = dspy.OutputField(desc="Test edilebilir yeni bir araştırma hipotezi")
     rationale = dspy.OutputField(desc="Bu hipotezin bilimsel gerekçesi")
 
-# SEKME SAYISI 9
+# TAB SAYISI 9
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "📝 Literatür", 
     "🕸️ Bilgi Ağı", 
@@ -104,30 +358,40 @@ with tab1:
         search_query = st.text_input("Araştırma Konusu", placeholder="Örn: cortisol immune system")
         if st.button("PubMed'de Ara", type="primary"):
             with st.spinner("Tıbbi literatür taranıyor..."):
-                st.session_state.found_papers = search_papers(search_query, max_results=20)
+                st.session_state.found_papers = search_papers(search_query, limit=10)
         
         if "found_papers" in st.session_state and st.session_state.found_papers:
             st.success(f"{len(st.session_state.found_papers)} makale bulundu.")
             for idx, p in enumerate(st.session_state.found_papers):
                 cit_count = p.get('citations', 0)
                 journal = p.get('journal', 'Bilinmeyen Dergi')
+                
+                # Yazar listesi boş geldiğinde çökmeyi önleyen güvenli yazar ataması
+                authors_list = p.get('authors', [])
+                author_name = authors_list[0].get('name', 'Bilinmeyen Yazar') if authors_list else 'Bilinmeyen Yazar'
+                
                 with st.expander(f"📄 {p.get('title')} ({p.get('year')}) | 📚 Atıf: {cit_count}"):
                     st.markdown(f"**Dergi:** *{journal}*")
                     st.write(p.get('abstract'))
+                    
                     if st.button("Analiz Et ve Ağa Ekle", key=f"btn_{idx}"):
-                        source_name = f"{p.get('authors')[0]['name'] if p.get('authors') else 'Bilinmeyen'} ({journal})"
+                        source_name = f"{author_name} ({journal})"
                         impact_score = min(1.0, 0.5 + (cit_count / 200.0))
+                        
                         with st.spinner("Archivist okuyor..."):
-                            # İŞTE BURASI: Kendi yazdığın hatasız Yapay Zeka çalıştırma yöntemi!
                             with dspy.context(lm=lm):
                                 result = archivist(text=p.get('abstract'))
+                            
                             for line in result.triples.split('\n'):
                                 if '|' in line:
                                     parts = [x.strip() for x in line.split('|')]
                                     if len(parts) >= 4:
                                         src, rel, tgt, conf_str = parts[:4]
-                                        try: llm_conf = float(conf_str)
-                                        except: llm_conf = 0.5
+                                        try: 
+                                            llm_conf = float(conf_str)
+                                        except ValueError: 
+                                            llm_conf = 0.5
+                                            
                                         final_conf = (llm_conf * 0.6) + (impact_score * 0.4)
                                         if rel in ["UPREGULATES", "DOWNREGULATES", "ASSOCIATES_WITH", "CAUSES", "CONTRADICTS"]:
                                             db.add_knowledge_triple(src, rel, tgt, final_conf, source_name, str(p.get('year', 'Tarihsiz')), p.get('abstract'))
@@ -143,29 +407,18 @@ with tab1:
 with tab2:
     st.subheader("İnteraktif Epistemik Ağ")
     if st.button("Grafiği Güncelle", type="secondary"):
-        
-        if db.driver is None:
-            st.error("🚨 Bağlantı koptu.")
-        else:
-            triples = db.get_all_triples(limit=300)
-            
-            if triples:
-                from pyvis.network import Network
-                import streamlit.components.v1 as components
-                
-                net = Network(height="600px", width="100%", bgcolor="#0E1117", font_color="white", directed=True)
-                for t in triples:
-                    net.add_node(t["source"], label=t["source"], color="#FF4B4B", size=15)
-                    net.add_node(t["target"], label=t["target"], color="#0068C9", size=15)
-                    net.add_edge(t["source"], t["target"], title=t['relation'], label=t["relation"], color="#7C7C8C")
-                
-                net.repulsion(node_distance=150, spring_length=150)
-                net.save_graph("epistemic_graph.html")
-                with open("epistemic_graph.html", "r", encoding="utf-8") as f:
-                    components.html(f.read(), height=650)
-            else:
-                st.info("📊 Veritabanı (Neo4j) şu an tamamen boş! Ağı görebilmek için lütfen 1. Sekmeden bir makaleyi analiz edip kaydedin.")
-                
+        triples = db.get_all_triples(limit=300)
+        if triples:
+            net = Network(height="600px", width="100%", bgcolor="#0E1117", font_color="white", directed=True)
+            for t in triples:
+                net.add_node(t["source"], label=t["source"], color="#FF4B4B", size=15)
+                net.add_node(t["target"], label=t["target"], color="#0068C9", size=15)
+                net.add_edge(t["source"], t["target"], title=t['relation'], label=t["relation"], color="#7C7C8C")
+            net.repulsion(node_distance=150, spring_length=150)
+            net.save_graph("epistemic_graph.html")
+            with open("epistemic_graph.html", "r", encoding="utf-8") as f:
+                components.html(f.read(), height=650)
+
 # --- MODÜL 3: ÇELİŞKİ YÖNETİMİ ---
 with tab3:
     st.subheader("⚖️ Çelişki Yönetimi")
@@ -175,61 +428,65 @@ with tab3:
         if st.button("Bilimsel Çelişki Analizi Yap", type="primary"):
             factors = db.get_factors_affecting(target_concept)
             if factors:
-                pos_score = sum([d.get('confidence',0.5) for d in factors if d['relation'] not in ["CONTRADICTS", "DOWNREGULATES"]])
-                neg_score = sum([d.get('confidence',0.5) for d in factors if d['relation'] in ["CONTRADICTS", "DOWNREGULATES"]])
+                pos_score = sum([d.get('confidence', 0.5) for d in factors if d['relation'] not in ["CONTRADICTS", "DOWNREGULATES"]])
+                neg_score = sum([d.get('confidence', 0.5) for d in factors if d['relation'] in ["CONTRADICTS", "DOWNREGULATES"]])
                 total = pos_score + neg_score
                 ratio = int((pos_score / total) * 100) if total > 0 else 50
+                
                 st.progress(ratio / 100.0) 
                 cA, cB = st.columns(2)
                 with cA: st.success(f"🟢 Destek Oranı: %{ratio}")
                 with cB: st.error(f"🔴 Çelişki Oranı: %{100 - ratio}")
+                
                 for d in factors:
-                    if d.get('relation') in ["CONTRADICTS", "DOWNREGULATES"]: st.error(f"**{d['source']}** ➜ ({d['relation']}) ➜ {target_concept}")
-                    else: st.info(f"**{d['source']}** ➜ ({d['relation']}) ➜ {target_concept}")
+                    if d.get('relation') in ["CONTRADICTS", "DOWNREGULATES"]: 
+                        st.error(f"**{d['source']}** ➜ ({d['relation']}) ➜ {target_concept}")
+                    else: 
+                        st.info(f"**{d['source']}** ➜ ({d['relation']}) ➜ {target_concept}")
 
 # --- MODÜL 4: MEKANİSTİK SİMÜLASYON ---
 with tab4:
     st.subheader("🧬 İn Silico Petri Kabı")
     concepts = db.get_all_concepts()
     if concepts:
-        # EKRANI İKİYE BÖLÜYORUZ: sim_col (Simülasyon), list_col (Molekül Listesi)
-        sim_col, list_col = st.columns([3, 1])
+        c1, c2, c3 = st.columns([2, 1, 1])
+        with c1: start_node = st.selectbox("Damlatılacak Molekül", concepts)
+        with c2: initial_dose = st.number_input("Başlangıç Dozu (mM)", min_value=10, max_value=1000, value=100, step=10)
+        with c3: sim_time = st.slider("İzleme Süresi (t)", 10, 200, 100)
         
-        with list_col:
-            st.markdown("##### 🧫 Keşfedilen Yapılar")
-            st.caption(f"Veritabanındaki {len(concepts)} yapı:")
-            # Yapıları sağ tarafta şık bir liste olarak gösteriyoruz
-            for c in sorted(concepts):
-                st.markdown(f"- `{c}`")
+        if st.button("Dinamik Simülasyonu Başlat 🚀", type="primary"):
+            triples = db.get_all_triples(limit=1000)
+            if triples:
+                nodes = list(set([t['source'] for t in triples] + [t['target'] for t in triples]))
                 
-        with sim_col:
-            # BURADAN AŞAĞISI SENİN ORİJİNAL KODUNUN BİREBİR AYNISIDIR
-            c1, c2, c3 = st.columns([2, 1, 1])
-            with c1: start_node = st.selectbox("Damlatılacak Molekül", concepts)
-            with c2: initial_dose = st.number_input("Başlangıç Dozu (mM)", min_value=10, max_value=1000, value=100, step=10)
-            with c3: sim_time = st.slider("İzleme Süresi (t)", 10, 200, 100)
-            if st.button("Dinamik Simülasyonu Başlat 🚀", type="primary"):
-                triples = db.get_all_triples(limit=1000)
-                if triples:
-                    nodes = list(set([t['source'] for t in triples] + [t['target'] for t in triples]))
-                    def system_dynamics(y, t, nodes, edges):
-                        dydt = np.zeros(len(nodes))
-                        for i, node in enumerate(nodes): dydt[i] = -0.03 * y[i]
-                        for edge in edges:
-                            src_i, tgt_i = nodes.index(edge['source']), nodes.index(edge['target'])
-                            k = edge.get('confidence', 0.5) * 0.2
-                            if edge['relation'] in ["UPREGULATES", "CAUSES", "ASSOCIATES_WITH"]: dydt[tgt_i] += k * y[src_i]
-                            elif edge['relation'] in ["DOWNREGULATES", "CONTRADICTS"]: dydt[tgt_i] -= k * y[src_i] * y[tgt_i] * 0.05
-                        return dydt
-                    y0 = np.zeros(len(nodes))
-                    if start_node in nodes: y0[nodes.index(start_node)] = initial_dose
-                    t_steps = np.linspace(0, sim_time, int(sim_time*2))
-                    with st.spinner("Çözümleniyor..."): solution = odeint(system_dynamics, y0, t_steps, args=(nodes, triples))
-                    fig = go.Figure()
-                    for i, node in enumerate(nodes):
-                        if np.max(solution[:, i]) > 1.0: fig.add_trace(go.Scatter(x=t_steps, y=solution[:, i], mode='lines', name=node, line=dict(width=3)))
-                    fig.update_layout(title=f"'{start_node}' Enjeksiyonu Kinetiği", xaxis_title="Zaman (t)", yaxis_title="Konsantrasyon", template="plotly_dark")
-                    st.plotly_chart(fig, use_container_width=True)
+                def system_dynamics(y, t, nodes, edges):
+                    dydt = np.zeros(len(nodes))
+                    for i, node in enumerate(nodes): 
+                        dydt[i] = -0.03 * y[i]
+                    for edge in edges:
+                        src_i, tgt_i = nodes.index(edge['source']), nodes.index(edge['target'])
+                        k = edge.get('confidence', 0.5) * 0.2
+                        if edge['relation'] in ["UPREGULATES", "CAUSES", "ASSOCIATES_WITH"]: 
+                            dydt[tgt_i] += k * y[src_i]
+                        elif edge['relation'] in ["DOWNREGULATES", "CONTRADICTS"]: 
+                            dydt[tgt_i] -= k * y[src_i] * y[tgt_i] * 0.05
+                    return dydt
+                
+                y0 = np.zeros(len(nodes))
+                if start_node in nodes: 
+                    y0[nodes.index(start_node)] = initial_dose
+                    
+                t_steps = np.linspace(0, sim_time, int(sim_time*2))
+                with st.spinner("Çözümleniyor..."): 
+                    solution = odeint(system_dynamics, y0, t_steps, args=(nodes, triples))
+                    
+                fig = go.Figure()
+                for i, node in enumerate(nodes):
+                    if np.max(solution[:, i]) > 1.0: 
+                        fig.add_trace(go.Scatter(x=t_steps, y=solution[:, i], mode='lines', name=node, line=dict(width=3)))
+                        
+                fig.update_layout(title=f"'{start_node}' Enjeksiyonu Kinetiği", xaxis_title="Zaman (t)", yaxis_title="Konsantrasyon", template="plotly_dark")
+                st.plotly_chart(fig, use_container_width=True)
 
 # --- MODÜL 5: TARİHSEL EVRİM ---
 with tab5:
@@ -241,7 +498,8 @@ with tab5:
             factors = db.get_factors_affecting(target_concept_timeline)
             if factors:
                 sorted_factors = sorted(factors, key=lambda x: int(str(x.get('date', '9999'))) if str(x.get('date', '9999')).isdigit() else 9999)
-                for d in sorted_factors: st.write(f"**{d.get('date', 'Bilinmeyen Yıl')}**: {d['source']} ➜ ({d['relation']}) ➜ {target_concept_timeline}")
+                for d in sorted_factors: 
+                    st.write(f"**{d.get('date', 'Bilinmeyen Yıl')}**: {d['source']} ➜ ({d['relation']}) ➜ {target_concept_timeline}")
 
 # --- MODÜL 6: HİPOTEZ JENERATÖRÜ ---
 with tab6:
@@ -280,8 +538,8 @@ with tab7:
                 """)
         else:
             with st.expander("🧬 Protein ve Virüs Katlanma Rehberi", expanded=True):
-                st.markdown("Protein omurgası, amino asitlerin yan grupları (R grupları) hariç tutulduğunda, tekrar eden ana atom zincirini (azot, alfa-karbon ve karbonil karbonu) ve aralarındaki peptit bağlarını ifade eder. Bu temel yapı, proteine temel şeklini ve sarmal/tabaka gibi ikincil yapısal düzenini kazandırır. **CHON:** Proteinin omurgası | 🟡 **Sarı Kesik Çizgiler:** Zayıf Hidrojen Bağları")
-
+                st.markdown("🌈 **Renkli Şeritler:** Proteinin omurgası | 🟡 **Sarı Kesik Çizgiler:** Zayıf Hidrojen Bağları")
+                
     with col_view:
         if render_btn and search_term:
             try:
@@ -310,7 +568,8 @@ with tab7:
                         view.setBackgroundColor('#0E1117')
                         view.zoomTo()
                         showmol(view, height=500, width=600)
-            except Exception: pass
+            except Exception:
+                pass
 
 # --- MODÜL 8: ELN ---
 with tab8:
@@ -325,17 +584,19 @@ with tab8:
                 mol = str(row.get('Molekül', '')).strip()
                 kontrol, deney = float(row.get('Kontrol_Miktar', 0)), float(row.get('Deney_Miktar', 0))
                 lab_result = "ARTTI" if deney > kontrol * 1.1 else "AZALDI" if deney < kontrol * 0.9 else "DEĞİŞMEDİ"
+                
                 with st.expander(f"{mol} (Kontrol: {kontrol} ➜ Deney: {deney}) - {lab_result}"):
                     if mol.lower() in network_concepts:
                         factors = db.get_factors_affecting(mol)
                         if factors:
                             for f in factors:
                                 rel, src = f['relation'], f['source']
-                                if (rel in ["UPREGULATES", "CAUSES"] and lab_result == "ARTTI") or (rel in ["DOWNREGULATES", "CONTRADIcripts"] and lab_result == "AZALDI"):
+                                if (rel in ["UPREGULATES", "CAUSES"] and lab_result == "ARTTI") or (rel in ["DOWNREGULATES", "CONTRADICTS"] and lab_result == "AZALDI"):
                                     st.success(f"✅ Doğrulandı: {src} ➜ {rel}")
                                 elif (rel in ["UPREGULATES", "CAUSES"] and lab_result == "AZALDI") or (rel in ["DOWNREGULATES", "CONTRADICTS"] and lab_result == "ARTTI"):
                                     st.error(f"⚠️ ÇELİŞKİ: {src} ➜ {rel} (Ancak deneyiniz aksini söylüyor!)")
-        except Exception as e: pass
+        except Exception as e:
+            pass
 
 # --- MODÜL 9: YENİ SANAL ÇARPIŞTIRICI (MOLECULAR COLLIDER) ---
 with tab9:
@@ -375,103 +636,13 @@ with tab9:
             
         st.markdown("### 🤖 Biyolojik Etki ve Kenetlenme Raporu")
         with st.spinner(f"Archivist Yapay Zekası '{entity_a}' ve '{entity_b}' arasındaki moleküler uyumu hesaplıyor..."):
-            # YİNE BURASI: Hatasız AI çalıştırma bloğu!
             with dspy.context(lm=lm):
                 result = dspy.Predict(DockingSignature)(entity_a=entity_a, entity_b=entity_b)
                 
-                cA, cB = st.columns(2)
-                with cA:
-                    st.success("🔗 **Fiziksel Uyum (Bağlanma Gücü):**")
-                    st.write(result.binding_affinity)
-                with cB:
-                    st.error("⚕️ **Biyolojik Sonuç (Mutasyon/Hastalık Etkisi):**")
-                    st.write(result.biological_outcome)
-
-# --- MODÜL 6: 3D MOLEKÜLER KENETLENME VE YAPI GÖRÜNTÜLEYİCİ ---
-st.markdown("---")
-st.subheader("🔬 3D Moleküler Kenetlenme ve Yapı Görüntüleyici (PDB Viewer)")
-st.caption("Biyolojik ve farmakolojik açıdan kritik yapıların, virüs-reseptör kilitlenmelerinin ve hücresel makinelerin üç boyutlu atomik analizi.")
-
-# Kapsamlı ve Kategorize Edilmiş PDB Arşivi
-pdb_options = {
-    # Virüsler & Patojenler
-    "SARS-CoV-2 Spike / ACE2 Reseptör Kilitlenmesi": "6M0J",
-    "HIV-1 Protease (İlaç Hedefi)": "1HHP",
-    "İnfluenza (Grip) Hemagglutinin": "1RD8",
-    "Ebola Virüsü Glikoproteini": "5JQ3",
-    
-    # Hormonlar, Reseptörler & Sinyalleşme
-    "İnsülin ve Reseptör Kompleksi": "3W7Y",
-    "İnsan Büyüme Hormonu ve Reseptörü": "3HHR",
-    "Östrojen Reseptörü (Hormon Bağlanması)": "1ERE",
-    "Adrenalin Reseptörü (Beta-2 G-Protein)": "2RH1",
-    
-    # Hücresel Makineler & Genetik
-    "DNA Çift Sarmal Yapısı (Klasik)": "1BNA",
-    "CRISPR-Cas9 Gen Düzenleme Makinesi": "4UN3",
-    "Nükleozom Çekirdek Parçacığı (DNA Paketleme)": "1KX5",
-    "Bakterial Ribozom (Protein Fabrikası)": "4V6X",
-    
-    # Enzimler, Metabolizma & Taşıyıcılar
-    "Hemoglobin (Oksijen Taşıyıcı Protein)": "2HHB",
-    "Yeşil Floresan Protein (GFP - Işıyan Protein)": "1EMA",
-    "Tükürük Lizozim Enzimi (Bakteri Parçalayıcı)": "1LYZ",
-    "ATP Sentaz (Hücresel Enerji Üreteci)": "1C17"
-}
-
-# Kullanıcıya hem hazır zengin liste hem de özel kod girebilme esnekliği sunuyoruz
-col_sel, col_custom = st.columns([2, 1])
-
-with col_sel:
-    selected_complex = st.selectbox("Arşivden Seçim Yapın", list(pdb_options.keys()))
-    default_pdb = pdb_options[selected_complex]
-
-with col_custom:
-    custom_code = st.text_input("Veya Özel PDB Kodu Girin", placeholder="Örn: 4HHB", help="RCSB PDB sitesinden bulduğunuz 4 haneli kodu buraya yazabilirsiniz.")
-
-# Eğer özel kod girildiyse onu kullan, girilmediyse listedekini al
-pdb_id = custom_code.strip().upper() if custom_code.strip() else default_pdb
-
-st.write(f"🔍 **Aktif Görüntülenen PDB ID:** `{pdb_id}`")
-
-# 3D Görüntüleyici HTML/JS Entegrasyonu
-viewer_html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.3/3Dmol-min.js"></script>
-    <style>
-        body {{ margin: 0; background-color: #0E1117; color: white; font-family: sans-serif; }}
-        #container {{ width: 100%; height: 550px; position: relative; }}
-    </style>
-</head>
-<body>
-    <div id="container"></div>
-    <script>
-        let element = document.getElementById("container");
-        let config = {{ backgroundColor: "#0E1117" }};
-        let viewer = $3Dmol.createViewer(element, config);
-        
-        fetch("https://files.rcsb.org/download/{pdb_id}.pdb")
-            .then(response => {{
-                if (!response.ok) throw new Error("PDB verisi bulunamadı");
-                return response.text();
-            }})
-            .then(data => {{
-                viewer.addModel(data, "pdb");
-                viewer.setStyle({{}}, {{cartoon: {{color: 'spectrum'}} }});
-                viewer.zoomTo();
-                viewer.render();
-            }})
-            .catch(error => {{
-                element.innerHTML = "<p style='color:#FF4B4B; text-align:center; padding-top:220px; font-weight:bold;'>Hata: Bu PDB kodu ({pdb_id}) veritabanında bulunamadı veya ağ bağlantısı kurulamadı.</p>";
-            }});
-    </script>
-</body>
-</html>
-"""
-
-import streamlit.components.v1 as components
-components.html(viewer_html, height=570)
-
-st.info("💡 **İpucu:** İstediğiniz herhangi bir proteinin 4 haneli PDB kodunu (örneğin Google'da 'hemoglobin PDB code' diye aratarak) sağdaki kutucuğa yazıp dünyadaki tüm bilinen yapıları anında laboratuvarınıza getirebilirsiniz.")
+            cA, cB = st.columns(2)
+            with cA:
+                st.success("🔗 **Fiziksel Uyum (Bağlanma Gücü):**")
+                st.write(result.binding_affinity)
+            with cB:
+                st.error("⚕️ **Biyolojik Sonuç (Mutasyon/Hastalık Etkisi):**")
+                st.write(result.biological_outcome)
