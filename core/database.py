@@ -1,18 +1,28 @@
 from neo4j import GraphDatabase
+import os
 import streamlit as st
+from neo4j import GraphDatabase
 
 class EpistemicGraph:
     def __init__(self):
-        # Kalkanı indirdik: Hata varsa sistem doğrudan kırmızı ekranla gerçek sebebi söyleyecek
-        uri = st.secrets["NEO4J_URI"]
-        user = st.secrets["NEO4J_USERNAME"]
-        password = st.secrets["NEO4J_PASSWORD"]
-        
-        self.driver = GraphDatabase.driver(uri, auth=(user, password))
-        
-        # Bağlantıyı zorla test et
-        self.driver.verify_connectivity() 
+        # 1. Önce Streamlit Cloud Secrets'a bak, bulamazsa lokal os.getenv'e bak
+        try:
+            self.uri = st.secrets.get("NEO4J_URI", os.getenv("NEO4J_URI"))
+            self.user = st.secrets.get("NEO4J_USERNAME", os.getenv("NEO4J_USERNAME"))
+            self.password = st.secrets.get("NEO4J_PASSWORD", os.getenv("NEO4J_PASSWORD"))
+        except Exception:
+            self.uri = os.getenv("NEO4J_URI")
+            self.user = os.getenv("NEO4J_USERNAME")
+            self.password = os.getenv("NEO4J_PASSWORD")
+            
+        # 2. Eğer adres hala boşsa sistemi çökmeden önce uyar
+        if not self.uri:
+            st.error("🚨 Neo4j veritabanı adresi bulunamadı! Lütfen Streamlit Cloud 'Secrets' ayarlarını kontrol edin.")
+            st.stop()
 
+        # 3. Güvenli Bağlantıyı Başlat
+        self.driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
+        self.driver.verify_connectivity()
     def close(self):
         if self.driver:
             self.driver.close()
